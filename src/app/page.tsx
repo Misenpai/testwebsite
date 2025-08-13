@@ -7,6 +7,7 @@ import AttendanceTable from './components/AttendanceTable';
 import Modal from './components/Modal';
 import type { ApiResponse, Filters, User } from './types';
 import './globals.css';
+import * as XLSX from 'xlsx';
 
 export default function AttendanceDashboard(): React.JSX.Element {
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -40,6 +41,71 @@ export default function AttendanceDashboard(): React.JSX.Element {
       setLoading(false);
     }
   }, [filters.apiBase, filters.month, filters.year]);
+
+  const handleLocationTypeChange = async (empId: string, newType: 'ABSOLUTE' | 'APPROX' | 'FIELDTRIP'): Promise<void> => {
+    try {
+      const response = await fetch(`${filters.apiBase}/user-location`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          empId,
+          locationType: newType
+        })
+      });
+
+      if (response.ok) {
+        // Update local state
+        if (data) {
+          const updatedData = {
+            ...data,
+            data: data.data.map(user => 
+              user.empId === empId ? { ...user, locationType: newType } : user
+            )
+          };
+          setData(updatedData);
+        }
+      } else {
+        console.error('Failed to update location type');
+      }
+    } catch (err) {
+      console.error('Error updating location type:', err);
+    }
+  };
+
+  const handleDownloadExcel = (user: User): void => {
+    // Prepare data for Excel
+    const excelData = user.attendances.map(att => ({
+      'Date': new Date(att.date).toLocaleDateString(),
+      'Check-in Time': new Date(att.checkInTime).toLocaleTimeString(),
+      'Location': att.location || 'Not specified',
+      'Photos': att.photos.length,
+      'Audio': att.audio.length > 0 ? 'Yes' : 'No'
+    }));
+
+    // Create worksheet using the correct method
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // Create workbook using the correct method
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+    
+    // Add user info sheet
+    const userInfo = [
+      ['Employee ID', user.empId],
+      ['Username', user.username],
+      ['Email', user.email],
+      ['Department', user.department],
+      ['Location Type', user.locationType],
+      ['Status', user.isActive ? 'Active' : 'Inactive']
+    ];
+    const wsInfo = XLSX.utils.aoa_to_sheet(userInfo);
+    XLSX.utils.book_append_sheet(wb, wsInfo, 'User Info');
+    
+    // Download file
+    XLSX.writeFile(wb, `${user.username}_attendance_${filters.month}_${filters.year}.xlsx`);
+  };
 
   const handleFilterChange = (newFilters: Filters): void => {
     setFilters(newFilters);
@@ -77,6 +143,9 @@ export default function AttendanceDashboard(): React.JSX.Element {
         loading={loading}
         error={error}
         onViewDetails={handleViewDetails}
+        onLocationTypeChange={handleLocationTypeChange}
+        onDownloadExcel={handleDownloadExcel}
+        apiBase={filters.apiBase}
       />
 
       {modalData && (

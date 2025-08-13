@@ -21,8 +21,7 @@ export interface User {
   username: string;
   email: string;
   department: string;
-  locationType: string;
-  monthlyAttendanceCount: number;
+  locationType: 'ABSOLUTE' | 'APPROX' | 'FIELDTRIP';
   isActive: boolean;
   attendances: Attendance[];
 }
@@ -37,11 +36,4 @@ export interface Filters {
   month: number;
   year: number;
   apiBase: string;
-}
-
-export interface StatsData {
-  totalUsers: number;
-  activeUsers: number;
-  monthAttendance: number;
-  avgAttendance: number;
 }

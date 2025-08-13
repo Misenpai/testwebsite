@@ -318,3 +318,88 @@ tr:hover {
   border-radius: 8px;
   margin: 20px 0;
 }
+
+.modal-info {
+  margin-bottom: 20px;
+}
+/* Add these styles to your existing globals.css */
+
+/* Location Type Select Dropdown */
+.location-select {
+  padding: 6px 10px;
+  border: 2px solid #d1ecf1;
+  border-radius: 6px;
+  background: #f0f8ff;
+  color: #0c5460;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.location-select:hover {
+  border-color: #667eea;
+}
+
+.location-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Action Buttons Container */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Download Button */
+.download-btn {
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: transform 0.2s;
+}
+
+.download-btn:hover {
+  transform: translateY(-1px);
+  background: #218838;
+}
+
+/* Search Container in Modal */
+.search-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.date-search {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  max-width: 200px;
+}
+
+.date-search:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.clear-search-btn {
+  padding: 10px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.clear-search-btn:hover {
+  background: #c82333;
+}

@@ -1,5 +1,7 @@
 'use client';
 
+import React from 'react';
+import { useState, useEffect } from 'react';
 import type { User, Photo, Audio } from '../types';
 
 interface ModalProps {
@@ -8,6 +10,21 @@ interface ModalProps {
 }
 
 export default function Modal({ user, onClose }: ModalProps): React.JSX.Element {
+  const [searchDate, setSearchDate] = useState<string>('');
+  const [filteredAttendances, setFilteredAttendances] = useState(user.attendances);
+
+  useEffect(() => {
+    if (searchDate) {
+      const filtered = user.attendances.filter(att => {
+        const attDate = new Date(att.date).toISOString().split('T')[0];
+        return attDate === searchDate;
+      });
+      setFilteredAttendances(filtered);
+    } else {
+      setFilteredAttendances(user.attendances);
+    }
+  }, [searchDate, user.attendances]);
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>): void => {
     if ((e.target as HTMLElement).classList.contains('modal')) {
       onClose();
@@ -33,15 +50,32 @@ export default function Modal({ user, onClose }: ModalProps): React.JSX.Element 
             <strong>Email:</strong> {user.email}<br />
             <strong>Department:</strong> {user.department}<br />
             <strong>Location Type:</strong> {user.locationType}<br />
-            <strong>Monthly Attendance:</strong> {user.monthlyAttendanceCount} days
           </div>
           
           <h3>Attendance Records</h3>
           
-          {user.attendances.length === 0 ? (
-            <p>No attendance records for this month</p>
+          <div className="search-container">
+            <input
+              type="date"
+              value={searchDate}
+              onChange={(e) => setSearchDate(e.target.value)}
+              placeholder="Search by date..."
+              className="date-search"
+            />
+            {searchDate && (
+              <button 
+                className="clear-search-btn"
+                onClick={() => setSearchDate('')}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          
+          {filteredAttendances.length === 0 ? (
+            <p>No attendance records found {searchDate ? 'for selected date' : 'for this month'}</p>
           ) : (
-            user.attendances.map((att, index: number) => {
+            filteredAttendances.map((att, index: number) => {
               const date = new Date(att.date);
               const checkIn = new Date(att.checkInTime);
               

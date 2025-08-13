@@ -2,18 +2,18 @@
 
 import type { Filters } from '../types';
 
-interface FiltersSectionProps {
-  filters: Filters;
-  onFilterChange: (filters: Filters) => void;
-  onLoadData: () => void;
-}
 
-export default function FiltersSection({ 
+
+function FiltersSection({ 
   filters, 
   onFilterChange, 
   onLoadData 
-}: FiltersSectionProps): React.JSX.Element {
-  const handleInputChange = (key: keyof Filters, value: string | number): void => {
+}: {
+  filters: Filters;
+  onFilterChange: (filters: Filters) => void;
+  onLoadData: () => void;
+}) {
+  const handleInputChange = (key: keyof Filters, value: string | number) => {
     const newFilters = { ...filters, [key]: value };
     onFilterChange(newFilters);
   };
@@ -26,7 +26,6 @@ export default function FiltersSection({
           id="month-select"
           value={filters.month} 
           onChange={(e) => handleInputChange('month', parseInt(e.target.value))}
-          aria-label="Select month"
         >
           <option value="1">January</option>
           <option value="2">February</option>
@@ -49,7 +48,6 @@ export default function FiltersSection({
           id="year-select"
           value={filters.year} 
           onChange={(e) => handleInputChange('year', parseInt(e.target.value))}
-          aria-label="Select year"
         >
           <option value="2025">2025</option>
           <option value="2024">2024</option>
@@ -64,7 +62,6 @@ export default function FiltersSection({
           value={filters.apiBase}
           onChange={(e) => handleInputChange('apiBase', e.target.value)}
           placeholder="http://localhost:3000/api"
-          aria-label="API Base URL" 
         />
       </div>
       
@@ -74,3 +71,5 @@ export default function FiltersSection({
     </div>
   );
 }
+
+export default FiltersSection;
