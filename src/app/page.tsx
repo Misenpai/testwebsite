@@ -126,8 +126,8 @@ export default function AttendanceDashboard(): React.JSX.Element {
   return (
     <div className="container">
       <header>
-        <h1>📊 Attendance Dashboard</h1>
-        <p className="subtitle">View and manage employee attendance records</p>
+        <h1> Attendance Dashboard</h1>
+
       </header>
 
       <FiltersSection 
@@ -143,7 +143,7 @@ export default function AttendanceDashboard(): React.JSX.Element {
         loading={loading}
         error={error}
         onViewDetails={handleViewDetails}
-        onLocationTypeChange={handleLocationTypeChange}
+        updateLocationType={handleLocationTypeChange}
         onDownloadExcel={handleDownloadExcel}
         apiBase={filters.apiBase}
       />
