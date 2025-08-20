@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User } from "../types";
+import { User, FieldTrip } from "../types";
 
 interface FieldTripModalProps {
   user: User;
   onClose: () => void;
-  onSave: (empId: string, fieldTrips: any[]) => void;
-  apiBase: string; // pass from parent
+  onSave: (empId: string, fieldTrips: FieldTrip[]) => void;
+  apiBase: string;
 }
 
 export default function FieldTripModal({
@@ -16,9 +16,9 @@ export default function FieldTripModal({
   onSave,
   apiBase,
 }: FieldTripModalProps) {
-  const [fieldTrips, setFieldTrips] = useState<any[]>([]);
+  const [fieldTrips, setFieldTrips] = useState<FieldTrip[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newTrip, setNewTrip] = useState({
+  const [newTrip, setNewTrip] = useState<FieldTrip>({
     startDate: "",
     endDate: "",
     description: "",
@@ -28,8 +28,15 @@ export default function FieldTripModal({
   useEffect(() => {
     const fetchFieldTrips = async () => {
       try {
-        const res = await fetch(`${apiBase}/user-location/${user.empId}`);
+        console.log("Fetching field trips for:", user.empId); // Debug log
+
+        const res = await fetch(
+          `${apiBase}/user-location/field-trips/${user.empId}`
+        );
         const data = await res.json();
+
+        console.log("Field trips fetch response:", data); // Debug log
+
         if (data.success && data.data?.fieldTrips) {
           setFieldTrips(
             data.data.fieldTrips.map((trip: any) => ({
@@ -38,9 +45,12 @@ export default function FieldTripModal({
               description: trip.description || "",
             }))
           );
+        } else {
+          setFieldTrips([]);
         }
       } catch (err) {
         console.error("Error fetching field trips:", err);
+        setFieldTrips([]);
       } finally {
         setLoading(false);
       }
@@ -51,18 +61,44 @@ export default function FieldTripModal({
 
   const handleAddTrip = () => {
     if (newTrip.startDate && newTrip.endDate) {
+      // Validate dates
+      const startDate = new Date(newTrip.startDate);
+      const endDate = new Date(newTrip.endDate);
+
+      if (startDate > endDate) {
+        alert("End date must be after start date");
+        return;
+      }
+
+      console.log("Adding new trip:", newTrip); // Debug log
       setFieldTrips([...fieldTrips, { ...newTrip }]);
       setNewTrip({ startDate: "", endDate: "", description: "" });
+    } else {
+      alert("Please fill in both start and end dates");
     }
   };
 
   const handleRemoveTrip = (index: number) => {
+    console.log("Removing trip at index:", index); // Debug log
     setFieldTrips(fieldTrips.filter((_, i) => i !== index));
   };
 
   const handleSave = () => {
+    console.log("Saving field trips:", fieldTrips); // Debug log
     onSave(user.empId, fieldTrips);
     onClose();
+  };
+
+  const isCurrentlyOnTrip = (trip: FieldTrip): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(trip.startDate);
+    const endDate = new Date(trip.endDate);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    return today >= startDate && today <= endDate;
   };
 
   return (
@@ -81,12 +117,23 @@ export default function FieldTripModal({
         </div>
 
         <div className="modal-body">
+          <div className="field-trip-info">
+            <p>
+              <strong>Current Attendance Mode:</strong> {user.locationType}
+            </p>
+            <p>
+              <strong>Note:</strong> During field trip dates, attendance will
+              automatically switch to Field Trip mode, then revert to{" "}
+              {user.locationType} afterward.
+            </p>
+          </div>
+
           {loading ? (
             <p>Loading field trips…</p>
           ) : (
             <>
               <div className="field-trip-form">
-                <h3>Add Field Trip</h3>
+                <h3>Schedule New Field Trip</h3>
                 <div className="form-row">
                   <div className="form-group">
                     <label>Start Date</label>
@@ -122,7 +169,7 @@ export default function FieldTripModal({
                   />
                 </div>
                 <button className="add-trip-btn" onClick={handleAddTrip}>
-                  Add Field Trip
+                  Schedule Field Trip
                 </button>
               </div>
 
@@ -132,7 +179,12 @@ export default function FieldTripModal({
                   <p className="no-trips">No field trips scheduled</p>
                 ) : (
                   fieldTrips.map((trip, index) => (
-                    <div key={index} className="trip-item">
+                    <div
+                      key={index}
+                      className={`trip-item ${
+                        isCurrentlyOnTrip(trip) ? "active-trip" : ""
+                      }`}
+                    >
                       <div className="trip-info">
                         <span className="trip-dates">
                           {new Date(trip.startDate).toLocaleDateString()} -{" "}
@@ -142,6 +194,9 @@ export default function FieldTripModal({
                           <span className="trip-description">
                             {trip.description}
                           </span>
+                        )}
+                        {isCurrentlyOnTrip(trip) && (
+                          <span className="current-trip-badge">ACTIVE NOW</span>
                         )}
                       </div>
                       <button

@@ -21,9 +21,16 @@ export interface User {
   username: string;
   email: string;
   department: string;
-  locationType: 'ABSOLUTE' | 'APPROX' | 'FIELDTRIP';
+  locationType: 'APPROX' | 'ABSOLUTE'; // Changed to ABSOLUTE
   isActive: boolean;
   attendances: Attendance[];
+  fieldTrips?: FieldTrip[];
+}
+
+export interface FieldTrip {
+  startDate: string;
+  endDate: string;
+  description?: string;
 }
 
 export interface ApiResponse {

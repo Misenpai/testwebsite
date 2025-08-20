@@ -409,8 +409,24 @@ tr:hover {
 
 .location-type-cell {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-trip-indicator {
+  font-size: 11px;
+  color: #4caf50;
+  font-weight: bold;
+  background: #e8f5e8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.field-trip-count {
+  font-size: 11px;
+  color: #666;
+  text-align: center;
 }
 
 .manage-trips-btn {
@@ -420,7 +436,8 @@ tr:hover {
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 12px;
+  width: 100%;
 }
 
 .manage-trips-btn:hover {
@@ -569,4 +586,33 @@ tr:hover {
 
 .save-btn:hover {
   background: #0069d9;
+}
+
+.field-trip-info {
+  background: #e3f2fd;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #2196f3;
+}
+
+.field-trip-count {
+  font-size: 11px;
+  color: #666;
+  text-align: center;
+}
+
+.active-trip {
+  border-left: 4px solid #4caf50 !important;
+  background: #f1f8e9 !important;
+}
+
+.current-trip-badge {
+  background: #4caf50;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: 10px;
 }

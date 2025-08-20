@@ -42,7 +42,7 @@ export default function AttendanceDashboard(): React.JSX.Element {
     }
   }, [filters.apiBase, filters.month, filters.year]);
 
-  const handleLocationTypeChange = async (empId: string, newType: 'ABSOLUTE' | 'APPROX' | 'FIELDTRIP'): Promise<void> => {
+  const handleLocationTypeChange = async (empId: string, newType: 'APPROX' | 'ABSOLUTE'): Promise<void> => {
     try {
       const response = await fetch(`${filters.apiBase}/user-location`, {
         method: 'PUT',
@@ -126,8 +126,7 @@ export default function AttendanceDashboard(): React.JSX.Element {
   return (
     <div className="container">
       <header>
-        <h1> Attendance Dashboard</h1>
-
+        <h1>Attendance Dashboard</h1>
       </header>
 
       <FiltersSection 

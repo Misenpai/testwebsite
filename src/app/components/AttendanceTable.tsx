@@ -1,8 +1,9 @@
+// src/app/components/AttendanceTable.tsx
 "use client";
 
 import { useState } from "react";
 import FieldTripModal from "./FieldTripModel";
-import type { ApiResponse, User } from "../types";
+import type { ApiResponse, User, FieldTrip } from "../types";
 
 interface AttendanceTableProps {
   data: ApiResponse | null;
@@ -13,7 +14,7 @@ interface AttendanceTableProps {
   apiBase: string;
   updateLocationType: (
     empId: string,
-    newType: "ABSOLUTE" | "APPROX" | "FIELDTRIP",
+    newType: "APPROX" | "ABSOLUTE",
   ) => Promise<void>;
 }
 
@@ -30,44 +31,65 @@ export default function AttendanceTable({
     null,
   );
 
-  const locationTypes: Array<"ABSOLUTE" | "APPROX" | "FIELDTRIP"> = [
-    "ABSOLUTE",
+  // Only two selectable location types
+  const locationTypes: Array<"APPROX" | "ABSOLUTE"> = [
     "APPROX",
-    "FIELDTRIP",
+    "ABSOLUTE",
   ];
 
   const handleLocationTypeChange = async (
     empId: string,
-    newType: "ABSOLUTE" | "APPROX" | "FIELDTRIP",
+    newType: "APPROX" | "ABSOLUTE",
   ) => {
-    if (newType === "FIELDTRIP") {
-      const user = data?.data.find((u) => u.empId === empId);
-      if (user) {
-        setFieldTripModalUser(user);
-      }
-    } else {
-      await updateLocationType(empId, newType);
-    }
+    await updateLocationType(empId, newType);
   };
 
-  const handleSaveFieldTrips = async (empId: string, fieldTrips: any[]) => {
+  const handleSaveFieldTrips = async (empId: string, fieldTrips: FieldTrip[]) => {
     try {
-      const response = await fetch(`${apiBase}/user-location`, {
+      console.log('Saving field trips:', { empId, fieldTrips }); // Debug log
+
+      const response = await fetch(`${apiBase}/user-location/field-trips`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           empId,
-          locationType: "FIELDTRIP",
           fieldTripDates: fieldTrips,
         }),
       });
 
-      if (response.ok) {
-        await updateLocationType(empId, "FIELDTRIP");
+      const result = await response.json();
+      console.log('Field trips save response:', result); // Debug log
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save field trips');
       }
+      
+      // Show success message
+      alert('Field trips saved successfully!');
+      
+      // You can refresh the data here if needed
+      // window.location.reload(); // Or implement a proper refresh mechanism
     } catch (error) {
       console.error("Error saving field trips:", error);
+      alert('Failed to save field trips. Please try again.');
     }
+  };
+
+  // Function to check if user is currently on a field trip
+  const isOnFieldTrip = (user: User): boolean => {
+    if (!user.fieldTrips || user.fieldTrips.length === 0) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return user.fieldTrips.some(trip => {
+      const startDate = new Date(trip.startDate);
+      const endDate = new Date(trip.endDate);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      
+      return today >= startDate && today <= endDate;
+    });
   };
 
   if (loading) {
@@ -118,6 +140,7 @@ export default function AttendanceTable({
               <th>Email</th>
               <th>Department</th>
               <th>Location Type</th>
+              <th>Field Trips</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -135,12 +158,11 @@ export default function AttendanceTable({
                   <div className="location-type-cell">
                     <select
                       className="location-select"
-                      aria-label="Select location type"
                       value={user.locationType}
                       onChange={(e) =>
                         handleLocationTypeChange(
                           user.empId,
-                          e.target.value as "ABSOLUTE" | "APPROX" | "FIELDTRIP",
+                          e.target.value as "APPROX" | "ABSOLUTE",
                         )
                       }
                     >
@@ -150,16 +172,28 @@ export default function AttendanceTable({
                         </option>
                       ))}
                     </select>
-
-                    {user.locationType === "FIELDTRIP" && (
-                      <button
-                        className="manage-trips-btn"
-                        onClick={() => setFieldTripModalUser(user)}
-                      >
-                        📅
-                      </button>
+                    
+                    {/* Show if currently on field trip */}
+                    {isOnFieldTrip(user) && (
+                      <div className="field-trip-indicator">
+                        🏃‍♂️ On Field Trip
+                      </div>
                     )}
                   </div>
+                </td>
+
+                <td>
+                  <button
+                    className="manage-trips-btn"
+                    onClick={() => setFieldTripModalUser(user)}
+                  >
+                    📅 Manage
+                  </button>
+                  {user.fieldTrips && user.fieldTrips.length > 0 && (
+                    <div className="field-trip-count">
+                      {user.fieldTrips.length} scheduled
+                    </div>
+                  )}
                 </td>
 
                 <td>
@@ -197,7 +231,7 @@ export default function AttendanceTable({
       {fieldTripModalUser && (
         <FieldTripModal
           user={fieldTripModalUser}
-          apiBase={apiBase} // pass the API base so modal can fetch trips
+          apiBase={apiBase}
           onClose={() => setFieldTripModalUser(null)}
           onSave={handleSaveFieldTrips}
         />
