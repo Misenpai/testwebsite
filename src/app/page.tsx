@@ -17,7 +17,7 @@ export default function AttendanceDashboard(): React.JSX.Element {
   const [filters, setFilters] = useState<Filters>({
     month: new Date().getMonth() + 1,
     year: 2025,
-    apiBase: 'http://10.150.8.198:3000/api'
+    apiBase: 'http://10.150.8.74:3000/api'
   });
 
   const loadData = useCallback(async (): Promise<void> => {
