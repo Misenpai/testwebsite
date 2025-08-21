@@ -1,3 +1,4 @@
+// src/app/components/FieldTripModel.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,7 +7,7 @@ import { User, FieldTrip } from "../types";
 interface FieldTripModalProps {
   user: User;
   onClose: () => void;
-  onSave: (empId: string, fieldTrips: FieldTrip[]) => void;
+  onSave: (empCode: string, fieldTrips: FieldTrip[]) => void;
   apiBase: string;
 }
 
@@ -24,18 +25,17 @@ export default function FieldTripModal({
     description: "",
   });
 
-  // Fetch existing field trips from backend when modal opens
   useEffect(() => {
     const fetchFieldTrips = async () => {
       try {
-        console.log("Fetching field trips for:", user.empId); // Debug log
+        console.log("Fetching field trips for:", user.empCode);
 
         const res = await fetch(
-          `${apiBase}/user-location/field-trips/${user.empId}`
+          `${apiBase}/user-location/field-trips/${user.empCode}`  // Changed from empId
         );
         const data = await res.json();
 
-        console.log("Field trips fetch response:", data); // Debug log
+        console.log("Field trips fetch response:", data);
 
         if (data.success && data.data?.fieldTrips) {
           setFieldTrips(
@@ -57,11 +57,10 @@ export default function FieldTripModal({
     };
 
     fetchFieldTrips();
-  }, [user.empId, apiBase]);
+  }, [user.empCode, apiBase]);  // Changed from empId
 
   const handleAddTrip = () => {
     if (newTrip.startDate && newTrip.endDate) {
-      // Validate dates
       const startDate = new Date(newTrip.startDate);
       const endDate = new Date(newTrip.endDate);
 
@@ -70,7 +69,7 @@ export default function FieldTripModal({
         return;
       }
 
-      console.log("Adding new trip:", newTrip); // Debug log
+      console.log("Adding new trip:", newTrip);
       setFieldTrips([...fieldTrips, { ...newTrip }]);
       setNewTrip({ startDate: "", endDate: "", description: "" });
     } else {
@@ -79,13 +78,13 @@ export default function FieldTripModal({
   };
 
   const handleRemoveTrip = (index: number) => {
-    console.log("Removing trip at index:", index); // Debug log
+    console.log("Removing trip at index:", index);
     setFieldTrips(fieldTrips.filter((_, i) => i !== index));
   };
 
   const handleSave = () => {
-    console.log("Saving field trips:", fieldTrips); // Debug log
-    onSave(user.empId, fieldTrips);
+    console.log("Saving field trips:", fieldTrips);
+    onSave(user.empCode, fieldTrips);  // Changed from empId
     onClose();
   };
 
@@ -118,6 +117,9 @@ export default function FieldTripModal({
 
         <div className="modal-body">
           <div className="field-trip-info">
+            <p>
+              <strong>Employee Code:</strong> {user.empCode}
+            </p>
             <p>
               <strong>Current Attendance Mode:</strong> {user.locationType}
             </p>

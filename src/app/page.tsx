@@ -1,3 +1,4 @@
+// src/app/page.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,6 +15,8 @@ export default function AttendanceDashboard(): React.JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [modalData, setModalData] = useState<User | null>(null);
+
+  // ⚠️  Replace the placeholder below with your actual server URL
   const [filters, setFilters] = useState<Filters>({
     month: new Date().getMonth() + 1,
     year: 2025,
@@ -23,13 +26,11 @@ export default function AttendanceDashboard(): React.JSX.Element {
   const loadData = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError('');
-    
     try {
       const response = await fetch(
         `${filters.apiBase}/admin/users-attendance?month=${filters.month}&year=${filters.year}`
       );
       const result: ApiResponse = await response.json();
-
       if (result.success) {
         setData(result);
       } else {
@@ -42,82 +43,90 @@ export default function AttendanceDashboard(): React.JSX.Element {
     }
   }, [filters.apiBase, filters.month, filters.year]);
 
-  const handleLocationTypeChange = async (empId: string, newType: 'APPROX' | 'ABSOLUTE'): Promise<void> => {
+  const handleLocationTypeChange = async (
+    empCode: string,
+    newType: 'APPROX' | 'ABSOLUTE'
+  ): Promise<void> => {
     try {
-      const response = await fetch(`${filters.apiBase}/user-location`, {
+      const res = await fetch(`${filters.apiBase}/user-location`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          empId,
-          locationType: newType
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ empCode, locationType: newType })
       });
 
-      if (response.ok) {
-        // Update local state
-        if (data) {
-          const updatedData = {
-            ...data,
-            data: data.data.map(user => 
-              user.empId === empId ? { ...user, locationType: newType } : user
-            )
-          };
-          setData(updatedData);
-        }
-      } else {
+      if (!res.ok) {
         console.error('Failed to update location type');
+        return;
       }
+
+      // Optimistically update local state
+      setData(prev =>
+        prev
+          ? {
+              ...prev,
+              data: prev.data.map(u =>
+                u.empCode === empCode ? { ...u, locationType: newType } : u
+              )
+            }
+          : null
+      );
     } catch (err) {
       console.error('Error updating location type:', err);
     }
   };
 
   const handleDownloadExcel = (user: User): void => {
-    // Prepare data for Excel
-    const excelData = user.attendances.map(att => ({
-      'Date': new Date(att.date).toLocaleDateString(),
+    const attendanceRows = user.attendances.map(att => ({
+      Date: new Date(att.date).toLocaleDateString(),
+      Session: att.sessionType || 'N/A',
+      Type: att.attendanceType || 'In Progress',
       'Check-in Time': new Date(att.checkInTime).toLocaleTimeString(),
-      'Location': att.location || 'Not specified',
-      'Photos': att.photos.length,
-      'Audio': att.audio.length > 0 ? 'Yes' : 'No'
+      'Check-out Time': att.checkOutTime
+        ? new Date(att.checkOutTime).toLocaleTimeString()
+        : 'N/A',
+      Location: att.takenLocation || att.location || 'Not specified',
+      Status: att.isCheckedOut ? 'Completed' : 'In Progress',
+      Photos: att.photos.length,
+      Audio: att.audio.length > 0 ? 'Yes' : 'No'
     }));
 
-    // Create worksheet using the correct method
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    
-    // Create workbook using the correct method
+    // Attendance sheet
+    const ws = XLSX.utils.json_to_sheet(attendanceRows);
+
+    // Workbook
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
-    
-    // Add user info sheet
+
+    // User-info sheet
     const userInfo = [
-      ['Employee ID', user.empId],
+      ['Employee Code', user.empCode],
       ['Username', user.username],
       ['Email', user.email],
       ['Department', user.department],
       ['Location Type', user.locationType],
-      ['Status', user.isActive ? 'Active' : 'Inactive']
+      ['Status', user.isActive ? 'Active' : 'Inactive'],
+      [''],
+      ['Monthly Statistics'],
+      ['Total Days', user.monthlyStatistics?.totalDays?.toFixed(1) || '0'],
+      ['Full Days', user.monthlyStatistics?.fullDays || '0'],
+      ['Half Days', user.monthlyStatistics?.halfDays || '0']
     ];
     const wsInfo = XLSX.utils.aoa_to_sheet(userInfo);
     XLSX.utils.book_append_sheet(wb, wsInfo, 'User Info');
-    
-    // Download file
-    XLSX.writeFile(wb, `${user.username}_attendance_${filters.month}_${filters.year}.xlsx`);
+
+    // Download
+    XLSX.writeFile(
+      wb,
+      `${user.username}_attendance_${filters.month}_${filters.year}.xlsx`
+    );
   };
 
   const handleFilterChange = (newFilters: Filters): void => {
     setFilters(newFilters);
   };
 
-  const handleViewDetails = (user: User): void => {
-    setModalData(user);
-  };
-
-  const closeModal = (): void => {
-    setModalData(null);
-  };
+  const handleViewDetails = (user: User): void => setModalData(user);
+  const closeModal = (): void => setModalData(null);
 
   useEffect(() => {
     loadData();
@@ -129,15 +138,15 @@ export default function AttendanceDashboard(): React.JSX.Element {
         <h1>Attendance Dashboard</h1>
       </header>
 
-      <FiltersSection 
-        filters={filters} 
+      <FiltersSection
+        filters={filters}
         onFilterChange={handleFilterChange}
         onLoadData={loadData}
       />
 
       <StatsGrid data={data} />
 
-      <AttendanceTable 
+      <AttendanceTable
         data={data}
         loading={loading}
         error={error}
@@ -148,10 +157,7 @@ export default function AttendanceDashboard(): React.JSX.Element {
       />
 
       {modalData && (
-        <Modal 
-          user={modalData} 
-          onClose={closeModal}
-        />
+        <Modal user={modalData} onClose={closeModal} />
       )}
     </div>
   );

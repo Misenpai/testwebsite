@@ -13,7 +13,7 @@ interface AttendanceTableProps {
   onDownloadExcel: (user: User) => void;
   apiBase: string;
   updateLocationType: (
-    empId: string,
+    empCode: string,  // Changed from empId
     newType: "APPROX" | "ABSOLUTE",
   ) => Promise<void>;
 }
@@ -31,51 +31,46 @@ export default function AttendanceTable({
     null,
   );
 
-  // Only two selectable location types
   const locationTypes: Array<"APPROX" | "ABSOLUTE"> = [
     "APPROX",
     "ABSOLUTE",
   ];
 
   const handleLocationTypeChange = async (
-    empId: string,
+    empCode: string,  // Changed from empId
     newType: "APPROX" | "ABSOLUTE",
   ) => {
-    await updateLocationType(empId, newType);
+    await updateLocationType(empCode, newType);
   };
 
-  const handleSaveFieldTrips = async (empId: string, fieldTrips: FieldTrip[]) => {
+  const handleSaveFieldTrips = async (empCode: string, fieldTrips: FieldTrip[]) => {
     try {
-      console.log('Saving field trips:', { empId, fieldTrips }); // Debug log
+      console.log('Saving field trips:', { empCode, fieldTrips });
 
       const response = await fetch(`${apiBase}/user-location/field-trips`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          empId,
+          empCode: empCode,  // Changed from empId
           fieldTripDates: fieldTrips,
         }),
       });
 
       const result = await response.json();
-      console.log('Field trips save response:', result); // Debug log
+      console.log('Field trips save response:', result);
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to save field trips');
       }
       
-      // Show success message
       alert('Field trips saved successfully!');
       
-      // You can refresh the data here if needed
-      // window.location.reload(); // Or implement a proper refresh mechanism
     } catch (error) {
       console.error("Error saving field trips:", error);
       alert('Failed to save field trips. Please try again.');
     }
   };
 
-  // Function to check if user is currently on a field trip
   const isOnFieldTrip = (user: User): boolean => {
     if (!user.fieldTrips || user.fieldTrips.length === 0) return false;
     
@@ -90,6 +85,11 @@ export default function AttendanceTable({
       
       return today >= startDate && today <= endDate;
     });
+  };
+
+  const getAttendanceTypeColor = (attendanceType?: 'FULL_DAY' | 'HALF_DAY') => {
+    if (!attendanceType) return '#FFA500'; // Orange for in progress
+    return attendanceType === 'FULL_DAY' ? '#10B981' : '#3B82F6'; // Green for full, Blue for half
   };
 
   if (loading) {
@@ -130,15 +130,20 @@ export default function AttendanceTable({
       <div className="users-table">
         <div className="table-header">
           <h2>Employee Attendance Records</h2>
+          <div className="header-info">
+            <span>Month: {data.month}/{data.year}</span>
+            <span>Total Users: {data.totalUsers}</span>
+          </div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th>Employee ID</th>
+              <th>Employee Code</th>
               <th>Username</th>
               <th>Email</th>
               <th>Department</th>
+              <th>Monthly Stats</th>
               <th>Location Type</th>
               <th>Field Trips</th>
               <th>Status</th>
@@ -148,11 +153,38 @@ export default function AttendanceTable({
 
           <tbody>
             {data.data.map((user: User, index: number) => (
-              <tr key={user.empId || index} className="user-row">
-                <td>{user.empId}</td>
+              <tr key={user.empCode || index} className="user-row">
+                <td>{user.empCode}</td>
                 <td>{user.username}</td>
                 <td>{user.email}</td>
                 <td>{user.department}</td>
+                
+                <td>
+                  {user.monthlyStatistics ? (
+                    <div className="monthly-stats">
+                      <span 
+                        title="Full Days" 
+                        style={{ background: '#d4edda', color: '#155724' }}
+                      >
+                        {user.monthlyStatistics.fullDays}F
+                      </span>
+                      <span 
+                        title="Half Days"
+                        style={{ background: '#cce5ff', color: '#004085' }}
+                      >
+                        {user.monthlyStatistics.halfDays}H
+                      </span>
+                      <span 
+                        title="Total Days"
+                        style={{ background: '#f8f9fa', color: '#495057' }}
+                      >
+                        {user.monthlyStatistics.totalDays.toFixed(1)}T
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="no-stats">No data</span>
+                  )}
+                </td>
 
                 <td>
                   <div className="location-type-cell">
@@ -161,7 +193,7 @@ export default function AttendanceTable({
                       value={user.locationType}
                       onChange={(e) =>
                         handleLocationTypeChange(
-                          user.empId,
+                          user.empCode,  // Changed from empId
                           e.target.value as "APPROX" | "ABSOLUTE",
                         )
                       }
@@ -173,7 +205,6 @@ export default function AttendanceTable({
                       ))}
                     </select>
                     
-                    {/* Show if currently on field trip */}
                     {isOnFieldTrip(user) && (
                       <div className="field-trip-indicator">
                         🏃‍♂️ On Field Trip
