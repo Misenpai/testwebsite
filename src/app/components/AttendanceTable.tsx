@@ -1,4 +1,3 @@
-// src/app/components/AttendanceTable.tsx
 "use client";
 
 import { useState } from "react";
@@ -13,8 +12,8 @@ interface AttendanceTableProps {
   onDownloadExcel: (user: User) => void;
   apiBase: string;
   updateLocationType: (
-    empCode: string,  // Changed from empId
-    newType: "APPROX" | "ABSOLUTE",
+    empCode: string,
+    newType: "APPROX" | "ABSOLUTE" | "FIELDTRIP",
   ) => Promise<void>;
 }
 
@@ -31,14 +30,15 @@ export default function AttendanceTable({
     null,
   );
 
-  const locationTypes: Array<"APPROX" | "ABSOLUTE"> = [
-    "APPROX",
+  const locationTypes: Array<"APPROX" | "ABSOLUTE" | "FIELDTRIP"> = [
     "ABSOLUTE",
+    "APPROX", 
+    "FIELDTRIP"
   ];
 
   const handleLocationTypeChange = async (
-    empCode: string,  // Changed from empId
-    newType: "APPROX" | "ABSOLUTE",
+    empCode: string,
+    newType: "APPROX" | "ABSOLUTE" | "FIELDTRIP",
   ) => {
     await updateLocationType(empCode, newType);
   };
@@ -51,7 +51,7 @@ export default function AttendanceTable({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          empCode: empCode,  // Changed from empId
+          empCode, // Changed from empId to empCode
           fieldTripDates: fieldTrips,
         }),
       });
@@ -64,7 +64,7 @@ export default function AttendanceTable({
       }
       
       alert('Field trips saved successfully!');
-      
+      window.location.reload();
     } catch (error) {
       console.error("Error saving field trips:", error);
       alert('Failed to save field trips. Please try again.');
@@ -85,11 +85,6 @@ export default function AttendanceTable({
       
       return today >= startDate && today <= endDate;
     });
-  };
-
-  const getAttendanceTypeColor = (attendanceType?: 'FULL_DAY' | 'HALF_DAY') => {
-    if (!attendanceType) return '#FFA500'; // Orange for in progress
-    return attendanceType === 'FULL_DAY' ? '#10B981' : '#3B82F6'; // Green for full, Blue for half
   };
 
   if (loading) {
@@ -130,10 +125,6 @@ export default function AttendanceTable({
       <div className="users-table">
         <div className="table-header">
           <h2>Employee Attendance Records</h2>
-          <div className="header-info">
-            <span>Month: {data.month}/{data.year}</span>
-            <span>Total Users: {data.totalUsers}</span>
-          </div>
         </div>
 
         <table>
@@ -143,9 +134,9 @@ export default function AttendanceTable({
               <th>Username</th>
               <th>Email</th>
               <th>Department</th>
-              <th>Monthly Stats</th>
               <th>Location Type</th>
               <th>Field Trips</th>
+              <th>Monthly Stats</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -158,43 +149,17 @@ export default function AttendanceTable({
                 <td>{user.username}</td>
                 <td>{user.email}</td>
                 <td>{user.department}</td>
-                
-                <td>
-                  {user.monthlyStatistics ? (
-                    <div className="monthly-stats">
-                      <span 
-                        title="Full Days" 
-                        style={{ background: '#d4edda', color: '#155724' }}
-                      >
-                        {user.monthlyStatistics.fullDays}F
-                      </span>
-                      <span 
-                        title="Half Days"
-                        style={{ background: '#cce5ff', color: '#004085' }}
-                      >
-                        {user.monthlyStatistics.halfDays}H
-                      </span>
-                      <span 
-                        title="Total Days"
-                        style={{ background: '#f8f9fa', color: '#495057' }}
-                      >
-                        {user.monthlyStatistics.totalDays.toFixed(1)}T
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="no-stats">No data</span>
-                  )}
-                </td>
 
                 <td>
                   <div className="location-type-cell">
                     <select
                       className="location-select"
+                      aria-label="Location Type"
                       value={user.locationType}
                       onChange={(e) =>
                         handleLocationTypeChange(
-                          user.empCode,  // Changed from empId
-                          e.target.value as "APPROX" | "ABSOLUTE",
+                          user.empCode,
+                          e.target.value as "APPROX" | "ABSOLUTE" | "FIELDTRIP",
                         )
                       }
                     >
@@ -225,6 +190,14 @@ export default function AttendanceTable({
                       {user.fieldTrips.length} scheduled
                     </div>
                   )}
+                </td>
+
+                <td>
+                  <div className="monthly-stats">
+                    <div>Total: {user.monthlyStatistics.totalDays}</div>
+                    <div>Full: {user.monthlyStatistics.fullDays}</div>
+                    <div>Half: {user.monthlyStatistics.halfDays}</div>
+                  </div>
                 </td>
 
                 <td>

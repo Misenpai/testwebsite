@@ -1,4 +1,3 @@
-// src/app/components/FieldTripModel.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -31,7 +30,7 @@ export default function FieldTripModal({
         console.log("Fetching field trips for:", user.empCode);
 
         const res = await fetch(
-          `${apiBase}/user-location/field-trips/${user.empCode}`  // Changed from empId
+          `${apiBase}/user-location/field-trips/${user.empCode}`
         );
         const data = await res.json();
 
@@ -39,7 +38,7 @@ export default function FieldTripModal({
 
         if (data.success && data.data?.fieldTrips) {
           setFieldTrips(
-            data.data.fieldTrips.map((trip: any) => ({
+            data.data.fieldTrips.map((trip: FieldTrip) => ({
               startDate: trip.startDate.split("T")[0],
               endDate: trip.endDate.split("T")[0],
               description: trip.description || "",
@@ -57,7 +56,7 @@ export default function FieldTripModal({
     };
 
     fetchFieldTrips();
-  }, [user.empCode, apiBase]);  // Changed from empId
+  }, [user.empCode, apiBase]);
 
   const handleAddTrip = () => {
     if (newTrip.startDate && newTrip.endDate) {
@@ -84,7 +83,7 @@ export default function FieldTripModal({
 
   const handleSave = () => {
     console.log("Saving field trips:", fieldTrips);
-    onSave(user.empCode, fieldTrips);  // Changed from empId
+    onSave(user.empCode, fieldTrips); // Changed from empId to empCode
     onClose();
   };
 
@@ -126,7 +125,7 @@ export default function FieldTripModal({
             <p>
               <strong>Note:</strong> During field trip dates, attendance will
               automatically switch to Field Trip mode, then revert to{" "}
-              {user.locationType} afterward.
+              {user.locationType === 'FIELDTRIP' ? 'ABSOLUTE' : user.locationType} afterward.
             </p>
           </div>
 
@@ -145,6 +144,8 @@ export default function FieldTripModal({
                       onChange={(e) =>
                         setNewTrip({ ...newTrip, startDate: e.target.value })
                       }
+                      placeholder="Start Date"
+                      title="Start Date"
                     />
                   </div>
                   <div className="form-group">
@@ -156,6 +157,8 @@ export default function FieldTripModal({
                       onChange={(e) =>
                         setNewTrip({ ...newTrip, endDate: e.target.value })
                       }
+                      placeholder="End Date"
+                      title="End Date"
                     />
                   </div>
                 </div>

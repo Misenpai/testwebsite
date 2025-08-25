@@ -1,9 +1,8 @@
-// src/app/components/Modal.tsx
 'use client';
 
 import React from 'react';
 import { useState, useEffect } from 'react';
-import type { User, Photo, Audio, Attendance } from '../types';
+import type { User, Photo, Audio } from '../types';
 
 interface ModalProps {
   user: User;
@@ -32,20 +31,8 @@ export default function Modal({ user, onClose }: ModalProps): React.JSX.Element 
     }
   };
 
-  const getSessionColor = (sessionType?: string) => {
-    if (sessionType === 'FORENOON') return '#17a2b8';
-    if (sessionType === 'AFTERNOON') return '#ffc107';
-    return '#6c757d';
-  };
-
-  const getAttendanceTypeLabel = (att: Attendance) => {
-    if (!att.isCheckedOut) return 'In Progress';
-    return att.attendanceType === 'FULL_DAY' ? 'Full Day' : 'Half Day';
-  };
-
-  const getAttendanceTypeColor = (att: Attendance) => {
-    if (!att.isCheckedOut) return '#ffc107';
-    return att.attendanceType === 'FULL_DAY' ? '#28a745' : '#17a2b8';
+  const modalBodyStyle: React.CSSProperties = {
+    marginBottom: '20px'
   };
 
   return (
@@ -58,30 +45,23 @@ export default function Modal({ user, onClose }: ModalProps): React.JSX.Element 
           </button>
         </div>
         <div className="modal-body">
-          <div className="modal-info">
+          <div style={modalBodyStyle}>
             <strong>Employee Code:</strong> {user.empCode}<br />
+            <strong>Username:</strong> {user.username}<br />
             <strong>Email:</strong> {user.email}<br />
             <strong>Department:</strong> {user.department}<br />
             <strong>Location Type:</strong> {user.locationType}<br />
+            <strong>Status:</strong> {user.isActive ? 'Active' : 'Inactive'}<br />
           </div>
-          
-          {/* Monthly Statistics */}
-          {user.monthlyStatistics && (
-            <div className="stats-summary">
-              <h3>Monthly Summary</h3>
-              <div className="stats-row">
-                <span className="stat-item">
-                  <strong>Total Days:</strong> {user.monthlyStatistics.totalDays.toFixed(1)}
-                </span>
-                <span className="stat-item">
-                  <strong>Full Days:</strong> {user.monthlyStatistics.fullDays}
-                </span>
-                <span className="stat-item">
-                  <strong>Half Days:</strong> {user.monthlyStatistics.halfDays}
-                </span>
-              </div>
+
+          <div className="monthly-stats-section">
+            <h3>Monthly Statistics</h3>
+            <div className="stats-row">
+              <span>Total Days: <strong>{user.monthlyStatistics.totalDays}</strong></span>
+              <span>Full Days: <strong>{user.monthlyStatistics.fullDays}</strong></span>
+              <span>Half Days: <strong>{user.monthlyStatistics.halfDays}</strong></span>
             </div>
-          )}
+          </div>
           
           <h3>Attendance Records</h3>
           
@@ -122,53 +102,12 @@ export default function Modal({ user, onClose }: ModalProps): React.JSX.Element 
                     })}
                   </div>
                   <div className="attendance-details">
-                    <div className="attendance-row">
-                      <div>
-                        <strong>Session:</strong> 
-                        <span 
-                          className="session-badge"
-                          style={{ 
-                            backgroundColor: getSessionColor(att.sessionType),
-                            color: 'white',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            marginLeft: '8px'
-                          }}
-                        >
-                          {att.sessionType || 'N/A'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong>Type:</strong> 
-                        <span 
-                          className="type-badge"
-                          style={{ 
-                            backgroundColor: getAttendanceTypeColor(att),
-                            color: 'white',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            marginLeft: '8px'
-                          }}
-                        >
-                          {getAttendanceTypeLabel(att)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="attendance-row">
-                      <div><strong>Check-in:</strong> {checkIn.toLocaleTimeString()}</div>
-                      {checkOut && (
-                        <div><strong>Check-out:</strong> {checkOut.toLocaleTimeString()}</div>
-                      )}
-                    </div>
-                    <div>
-                      <strong>Location:</strong> {att.takenLocation || att.location || 'Not specified'}
-                    </div>
-                    <div>
-                      <strong>Status:</strong> 
-                      <span className={`status-badge ${att.isCheckedOut ? 'checked-out' : 'in-progress'}`}>
-                        {att.isCheckedOut ? 'Completed' : 'In Progress'}
-                      </span>
-                    </div>
+                    <div><strong>Check-in:</strong> {checkIn.toLocaleTimeString()}</div>
+                    {checkOut && <div><strong>Check-out:</strong> {checkOut.toLocaleTimeString()}</div>}
+                    <div><strong>Session:</strong> {att.sessionType}</div>
+                    <div><strong>Type:</strong> {att.attendanceType || 'Pending'}</div>
+                    <div><strong>Status:</strong> {att.isCheckedOut ? 'Completed' : 'In Progress'}</div>
+                    <div><strong>Location:</strong> {att.location || 'Not specified'}</div>
                   </div>
                   <div className="media-links">
                     {att.photos.map((p: Photo, i: number) => (

@@ -1,4 +1,3 @@
-// src/app/page.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -15,22 +14,22 @@ export default function AttendanceDashboard(): React.JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [modalData, setModalData] = useState<User | null>(null);
-
-  // ⚠️  Replace the placeholder below with your actual server URL
   const [filters, setFilters] = useState<Filters>({
     month: new Date().getMonth() + 1,
     year: 2025,
-    apiBase: 'http://10.150.8.74:3000/api'
+    apiBase: 'http://10.150.9.98:3000/api'
   });
 
   const loadData = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError('');
+    
     try {
       const response = await fetch(
         `${filters.apiBase}/admin/users-attendance?month=${filters.month}&year=${filters.year}`
       );
       const result: ApiResponse = await response.json();
+
       if (result.success) {
         setData(result);
       } else {
@@ -44,60 +43,76 @@ export default function AttendanceDashboard(): React.JSX.Element {
   }, [filters.apiBase, filters.month, filters.year]);
 
   const handleLocationTypeChange = async (
-    empCode: string,
-    newType: 'APPROX' | 'ABSOLUTE'
+    empCode: string, 
+    newType: 'APPROX' | 'ABSOLUTE' | 'FIELDTRIP'
   ): Promise<void> => {
     try {
-      const res = await fetch(`${filters.apiBase}/user-location`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ empCode, locationType: newType })
-      });
+      const requestBody: {
+        empCode: string;
+        locationType: 'APPROX' | 'ABSOLUTE' | 'FIELDTRIP';
+        fieldTripDates?: string[];
+      } = {
+        empCode,
+        locationType: newType
+      };
 
-      if (!res.ok) {
-        console.error('Failed to update location type');
-        return;
+      // If changing to FIELDTRIP, include empty field trips array
+      if (newType === 'FIELDTRIP') {
+        requestBody.fieldTripDates = [];
       }
 
-      // Optimistically update local state
-      setData(prev =>
-        prev
-          ? {
-              ...prev,
-              data: prev.data.map(u =>
-                u.empCode === empCode ? { ...u, locationType: newType } : u
-              )
-            }
-          : null
-      );
+      const response = await fetch(`${filters.apiBase}/user-location`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (response.ok) {
+        // Update local state
+        if (data) {
+          const updatedData = {
+            ...data,
+            data: data.data.map(user => 
+              user.empCode === empCode ? { ...user, locationType: newType } : user
+            )
+          };
+          setData(updatedData);
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to update location type:', errorData);
+        alert('Failed to update location type: ' + (errorData.error || 'Unknown error'));
+      }
     } catch (err) {
       console.error('Error updating location type:', err);
+      alert('Error updating location type: ' + (err as Error).message);
     }
   };
 
   const handleDownloadExcel = (user: User): void => {
-    const attendanceRows = user.attendances.map(att => ({
-      Date: new Date(att.date).toLocaleDateString(),
-      Session: att.sessionType || 'N/A',
-      Type: att.attendanceType || 'In Progress',
+    // Prepare data for Excel
+    const excelData = user.attendances.map(att => ({
+      'Date': new Date(att.date).toLocaleDateString(),
       'Check-in Time': new Date(att.checkInTime).toLocaleTimeString(),
-      'Check-out Time': att.checkOutTime
-        ? new Date(att.checkOutTime).toLocaleTimeString()
-        : 'N/A',
-      Location: att.takenLocation || att.location || 'Not specified',
-      Status: att.isCheckedOut ? 'Completed' : 'In Progress',
-      Photos: att.photos.length,
-      Audio: att.audio.length > 0 ? 'Yes' : 'No'
+      'Check-out Time': att.checkOutTime ? new Date(att.checkOutTime).toLocaleTimeString() : 'Not checked out',
+      'Session Type': att.sessionType,
+      'Attendance Type': att.attendanceType || 'Pending',
+      'Status': att.isCheckedOut ? 'Completed' : 'In Progress',
+      'Location': att.location || 'Not specified',
+      'Photos': att.photos.length,
+      'Audio': att.audio.length > 0 ? 'Yes' : 'No'
     }));
 
-    // Attendance sheet
-    const ws = XLSX.utils.json_to_sheet(attendanceRows);
-
-    // Workbook
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // Create workbook
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
-
-    // User-info sheet
+    
+    // Add user info sheet
     const userInfo = [
       ['Employee Code', user.empCode],
       ['Username', user.username],
@@ -105,28 +120,28 @@ export default function AttendanceDashboard(): React.JSX.Element {
       ['Department', user.department],
       ['Location Type', user.locationType],
       ['Status', user.isActive ? 'Active' : 'Inactive'],
-      [''],
-      ['Monthly Statistics'],
-      ['Total Days', user.monthlyStatistics?.totalDays?.toFixed(1) || '0'],
-      ['Full Days', user.monthlyStatistics?.fullDays || '0'],
-      ['Half Days', user.monthlyStatistics?.halfDays || '0']
+      ['Total Days', user.monthlyStatistics.totalDays],
+      ['Full Days', user.monthlyStatistics.fullDays],
+      ['Half Days', user.monthlyStatistics.halfDays]
     ];
     const wsInfo = XLSX.utils.aoa_to_sheet(userInfo);
     XLSX.utils.book_append_sheet(wb, wsInfo, 'User Info');
-
-    // Download
-    XLSX.writeFile(
-      wb,
-      `${user.username}_attendance_${filters.month}_${filters.year}.xlsx`
-    );
+    
+    // Download file
+    XLSX.writeFile(wb, `${user.username}_attendance_${filters.month}_${filters.year}.xlsx`);
   };
 
   const handleFilterChange = (newFilters: Filters): void => {
     setFilters(newFilters);
   };
 
-  const handleViewDetails = (user: User): void => setModalData(user);
-  const closeModal = (): void => setModalData(null);
+  const handleViewDetails = (user: User): void => {
+    setModalData(user);
+  };
+
+  const closeModal = (): void => {
+    setModalData(null);
+  };
 
   useEffect(() => {
     loadData();
@@ -136,17 +151,18 @@ export default function AttendanceDashboard(): React.JSX.Element {
     <div className="container">
       <header>
         <h1>Attendance Dashboard</h1>
+        <p className="subtitle">Monitor and manage employee attendance records</p>
       </header>
 
-      <FiltersSection
-        filters={filters}
+      <FiltersSection 
+        filters={filters} 
         onFilterChange={handleFilterChange}
         onLoadData={loadData}
       />
 
       <StatsGrid data={data} />
 
-      <AttendanceTable
+      <AttendanceTable 
         data={data}
         loading={loading}
         error={error}
@@ -157,7 +173,10 @@ export default function AttendanceDashboard(): React.JSX.Element {
       />
 
       {modalData && (
-        <Modal user={modalData} onClose={closeModal} />
+        <Modal 
+          user={modalData} 
+          onClose={closeModal}
+        />
       )}
     </div>
   );

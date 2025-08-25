@@ -1,4 +1,3 @@
-// src/app/types/index.ts
 export interface Photo {
   url: string;
   type?: string;
@@ -13,42 +12,45 @@ export interface Attendance {
   date: string;
   checkInTime: string;
   checkOutTime?: string;
-  sessionType?: 'FORENOON' | 'AFTERNOON';
-  attendanceType?: 'FULL_DAY' | 'HALF_DAY';
-  isCheckedOut?: boolean;
+  sessionType: 'FORENOON' | 'AFTERNOON';
+  attendanceType: 'FULL_DAY' | 'HALF_DAY' | null;
+  isCheckedOut: boolean;
   location?: string;
-  takenLocation?: string;
   photos: Photo[];
   audio: Audio[];
 }
 
+export interface MonthlyStatistics {
+  totalDays: number;
+  fullDays: number;
+  halfDays: number;
+}
+
 export interface User {
-  empCode: string;  // Changed from empId
+  empCode: string; // Changed from empId to empCode
   username: string;
   email: string;
   department: string;
-  locationType: 'APPROX' | 'ABSOLUTE';
+  locationType: 'APPROX' | 'ABSOLUTE' | 'FIELDTRIP'; // Added FIELDTRIP
   isActive: boolean;
-  monthlyStatistics?: {
-    totalDays: number;
-    fullDays: number;
-    halfDays: number;
-  };
   attendances: Attendance[];
   fieldTrips?: FieldTrip[];
+  monthlyStatistics: MonthlyStatistics;
 }
 
 export interface FieldTrip {
   startDate: string;
   endDate: string;
   description?: string;
+  tripKey?: string;
+  isActive?: boolean;
 }
 
 export interface ApiResponse {
   success: boolean;
+  totalUsers: number;
   month: number;
   year: number;
-  totalUsers: number;
   data: User[];
 }
 
